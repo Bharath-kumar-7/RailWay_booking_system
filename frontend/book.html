@@ -1,0 +1,171 @@
+
+book-FIXED.html
+<!-- 🚆 RAILWAY BOOKING - FIXED book.html -->
+<!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+<!-- FIXES APPLIED:                                                                 -->
+<!-- ✅ Removed duplicate API_BASE_URL declaration                                 -->
+<!-- ✅ Added missing updatePassengerForms() function                              -->
+<!-- ✅ Properly integrated with booking.js                                        -->
+<!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Train Ticket - Railway Booking System</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fas fa-train"></i> Railway Booking
+            </div>
+            <ul class="nav-links">
+                <li><a href="home.html"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="bookings.html"><i class="fas fa-ticket-alt"></i> My Bookings</a></li>
+                <li><a href="index.html" onclick="localStorage.clear()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="booking-container">
+            <h1><i class="fas fa-ticket-alt"></i> Book Your Train Ticket</h1>
+
+            <div class="booking-content">
+                <!-- Train Summary Card -->
+                <div class="train-summary-card">
+                    <h2>Train Details</h2>
+                    <div id="trainDetails">
+                        <p>Loading train details...</p>
+                    </div>
+                </div>
+
+                <!-- Booking Form -->
+                <div class="booking-form-card">
+                    <h2>Booking Details</h2>
+                    <form id="bookingForm">
+                        <!-- Passenger Count Selection -->
+                        <div class="form-group">
+                            <label for="passengerCount">Number of Passengers:</label>
+                            <select id="passengerCount" required>
+                                <option value="1">1 Passenger</option>
+                                <option value="2">2 Passengers</option>
+                                <option value="3">3 Passengers</option>
+                                <option value="4">4 Passengers</option>
+                                <option value="5">5 Passengers</option>
+                            </select>
+                        </div>
+
+                        <!-- Passenger Forms (Generated Dynamically) -->
+                        <div id="passengerFormsContainer">
+                            <!-- Passenger forms will be added here -->
+                        </div>
+
+                        <!-- Price Summary -->
+                        <div class="price-summary">
+                            <h3>Price Breakdown</h3>
+                            <div class="price-row">
+                                <span>Base Fare per Seat:</span>
+                                <span id="baseFare">₹0.00</span>
+                            </div>
+                            <div class="price-row">
+                                <span>Number of Seats:</span>
+                                <span id="passengerCountDisplay">1</span>
+                            </div>
+                            <div class="price-row">
+                                <span>Total Fare:</span>
+                                <span id="totalFare">₹0.00</span>
+                            </div>
+                            <div class="price-row">
+                                <span>GST (5%):</span>
+                                <span id="gstAmount">₹0.00</span>
+                            </div>
+                            <div class="price-row total">
+                                <span>Total Amount:</span>
+                                <span id="totalAmount">₹0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn-primary" id="confirmBtn">
+                            <i class="fas fa-check"></i> Confirm Booking
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fas fa-check-circle"></i> Booking Confirmed!</h2>
+            <div class="booking-details"></div>
+            <div class="modal-buttons">
+                <button class="btn-primary view-bookings-btn">
+                    <i class="fas fa-list"></i> View My Bookings
+                </button>
+                <button class="btn-secondary home-btn">
+                    <i class="fas fa-home"></i> Go Home
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ FIXED: Removed duplicate API_BASE_URL (already defined in booking.js) -->
+    <!-- Only include booking.js, don't redefine constants -->
+    <script src="booking.js"></script>
+    <script>
+        // ✅ FIXED: Added missing updatePassengerForms() function
+        function updatePassengerForms() {
+            const passengerCount = parseInt(document.getElementById('passengerCount').value) || 1;
+            const container = document.getElementById('passengerFormsContainer');
+            
+            // Clear existing forms
+            container.innerHTML = '';
+            
+            // Create forms for each passenger
+            for (let i = 1; i <= passengerCount; i++) {
+                const passengerDiv = document.createElement('div');
+                passengerDiv.className = 'passenger-form';
+                passengerDiv.innerHTML = `
+                    <h4>Passenger ${i}</h4>
+                    <div class="form-group">
+                        <label for="passenger${i}Name">Name:</label>
+                        <input type="text" id="passenger${i}Name" placeholder="Full Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="passenger${i}Age">Age:</label>
+                        <input type="number" id="passenger${i}Age" placeholder="Age" min="1" max="120" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="passenger${i}Gender">Gender:</label>
+                        <select id="passenger${i}Gender" required>
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                `;
+                container.appendChild(passengerDiv);
+            }
+        }
+
+        // ✅ Initialize passenger forms when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            updatePassengerForms();
+            
+            // Add event listener to passenger count dropdown
+            const passengerCountSelect = document.getElementById('passengerCount');
+            if (passengerCountSelect) {
+                passengerCountSelect.addEventListener('change', updatePassengerForms);
+            }
+        });
+    </script>
+</body>
+</html>

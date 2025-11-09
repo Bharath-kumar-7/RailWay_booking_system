@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RailwayEase | Book Train Tickets</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <!-- NAVIGATION BAR -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="logo">
+        <i class="fas fa-train"></i>
+        <span>RailwayEase</span>
+      </div>
+      <nav>
+        <a href="home.html" class="nav-link active">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </a>
+        <a href="bookings.html" class="nav-link">
+          <i class="fas fa-ticket-alt"></i>
+          <span>My Bookings</span>
+        </a>
+        <a href="#" class="nav-link" onclick="logout()">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Book Your Journey With Ease</h1>
+      <p>Find and book train tickets across the country in just a few clicks</p>
+    </div>
+  </section>
+
+  <!-- SEARCH SECTION -->
+  <section class="search-section">
+    <div class="container">
+      <div class="search-card">
+        <h2>Search Available Trains</h2>
+        <p>Enter your journey details to find the perfect train</p>
+        
+        <form id="searchForm">
+          <div class="form-row">
+            <div class="input-group">
+              <label for="source">
+                <i class="fas fa-map-marker-alt"></i>
+                From Station
+              </label>
+              <input type="text" id="source" placeholder="Enter source station" required>
+            </div>
+            
+            <div class="swap-stations">
+              <button type="button" id="swapStations">
+                <i class="fas fa-exchange-alt"></i>
+              </button>
+            </div>
+            
+            <div class="input-group">
+              <label for="destination">
+                <i class="fas fa-map-marker-alt"></i>
+                To Station
+              </label>
+              <input type="text" id="destination" placeholder="Enter destination station" required>
+            </div>
+          </div>
+          
+          <div class="input-group">
+            <label for="travelDate">
+              <i class="fas fa-calendar-alt"></i>
+              Travel Date
+            </label>
+            <input type="date" id="travelDate" required>
+          </div>
+          
+          <button type="submit" class="btn-primary search-btn">
+            <i class="fas fa-search"></i>
+            Search Trains
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS SECTION -->
+  <section id="results" class="results-section">
+    <div class="container">
+      <!-- Results will be populated here by JavaScript -->
+    </div>
+  </section>
+
+  <!-- FEATURES SECTION -->
+  <section class="features-section">
+    <div class="container">
+      <h2>Why Choose RailwayEase?</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <i class="fas fa-bolt"></i>
+          <h3>Quick Booking</h3>
+          <p>Book your tickets in less than a minute with our streamlined process</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-shield-alt"></i>
+          <h3>Secure Payments</h3>
+          <p>Your payments are protected with bank-level security</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-headset"></i>
+          <h3>24/7 Support</h3>
+          <p>Our customer support team is always ready to help you</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <i class="fas fa-train"></i>
+          <span>RailwayEase</span>
+        </div>
+        <p>&copy; 2023 RailwayEase. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
