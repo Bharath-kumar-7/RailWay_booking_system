@@ -95,7 +95,7 @@ async function initializeDatabase() {
         console.log('✅ Users table verified');
         
         // ═══════════════════════════════════════════════════════════════════════════════
-        // CREATE TRAINS TABLE
+        // CREATE TRAINS TABLE WITH JOURNEY DATE
         // ═══════════════════════════════════════════════════════════════════════════════
         await pool.query(`
             CREATE TABLE IF NOT EXISTS trains (
@@ -103,13 +103,15 @@ async function initializeDatabase() {
                 train_name VARCHAR(100) NOT NULL,
                 source VARCHAR(50) NOT NULL,
                 destination VARCHAR(50) NOT NULL,
+                journey_date DATE NOT NULL,
                 departure_time TIME NOT NULL,
                 arrival_time TIME NOT NULL,
                 total_seats INT DEFAULT 100,
                 available_seats INT DEFAULT 100,
                 fare DECIMAL(10,2) DEFAULT 0,
                 INDEX idx_source (source),
-                INDEX idx_destination (destination)
+                INDEX idx_destination (destination),
+                INDEX idx_journey_date (journey_date)
             )
         `);
         console.log('✅ Trains table verified');
@@ -127,30 +129,32 @@ async function initializeDatabase() {
                 train_id INT NOT NULL,
                 seats_booked INT NOT NULL,
                 fare DECIMAL(10,2) DEFAULT 0,
+                journey_date DATE NOT NULL,
                 status VARCHAR(20) DEFAULT 'confirmed',
                 booking_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (train_id) REFERENCES trains(id) ON DELETE CASCADE,
                 INDEX idx_user (user_id),
                 INDEX idx_train (train_id),
-                INDEX idx_status (status)
+                INDEX idx_status (status),
+                INDEX idx_journey_date (journey_date)
             )
         `);
-        console.log('✅ Bookings table verified (with fare column)');
+        console.log('✅ Bookings table verified (with fare and journey_date columns)');
         
         // Insert sample trains if empty
         const [trains] = await pool.query('SELECT COUNT(*) as count FROM trains');
         if (trains[0].count === 0) {
             console.log('📝 Inserting sample train data...');
             await pool.query(`
-                INSERT INTO trains (train_name, source, destination, departure_time, arrival_time, total_seats, available_seats, fare)
+                INSERT INTO trains (train_name, source, destination, journey_date, departure_time, arrival_time, total_seats, available_seats, fare)
                 VALUES
-                ('Rajdhani Express', 'New Delhi', 'Mumbai Central', '08:30:00', '16:45:00', 120, 120, 1850.00),
-                ('Shatabdi Express', 'Chennai Central', 'Bangalore', '14:20:00', '21:15:00', 150, 150, 1520.00),
-                ('Duronto Express', 'Kolkata', 'Delhi', '23:10:00', '06:30:00', 200, 200, 1320.00),
-                ('Garib Rath Express', 'Mumbai', 'Ahmedabad', '06:15:00', '11:30:00', 180, 180, 850.00),
-                ('Vande Bharat Express', 'Delhi', 'Varanasi', '06:00:00', '14:00:00', 160, 160, 2200.00),
-                ('Tejas Express', 'Mumbai', 'Goa', '05:00:00', '12:30:00', 140, 140, 1680.00)
+                ('Rajdhani Express', 'New Delhi', 'Mumbai Central', CURDATE() + INTERVAL 1 DAY, '08:30:00', '16:45:00', 120, 120, 1850.00),
+                ('Shatabdi Express', 'Chennai Central', 'Bangalore', CURDATE() + INTERVAL 1 DAY, '14:20:00', '21:15:00', 150, 150, 1520.00),
+                ('Duronto Express', 'Kolkata', 'Delhi', CURDATE() + INTERVAL 2 DAY, '23:10:00', '06:30:00', 200, 200, 1320.00),
+                ('Garib Rath Express', 'Mumbai', 'Ahmedabad', CURDATE() + INTERVAL 2 DAY, '06:15:00', '11:30:00', 180, 180, 850.00),
+                ('Vande Bharat Express', 'Delhi', 'Varanasi', CURDATE() + INTERVAL 3 DAY, '06:00:00', '14:00:00', 160, 160, 2200.00),
+                ('Tejas Express', 'Mumbai', 'Goa', CURDATE() + INTERVAL 3 DAY, '05:00:00', '12:30:00', 140, 140, 1680.00)
             `);
             console.log('✅ Sample train data inserted');
         }
@@ -279,9 +283,9 @@ app.get('/trains', async (req, res) => {
 // Search trains
 app.get('/trains/search', async (req, res) => {
     try {
-        const { source, destination } = req.query;
+        const { source, destination, date } = req.query;
         
-        console.log(`🔍 Train search: ${source} → ${destination}`);
+        console.log(`🔍 Train search: ${source} → ${destination} on ${date}`);
         
         let query = 'SELECT * FROM trains WHERE available_seats > 0';
         const params = [];
@@ -295,6 +299,13 @@ app.get('/trains/search', async (req, res) => {
             query += ' AND LOWER(destination) LIKE ?';
             params.push(`%${destination.toLowerCase()}%`);
         }
+        
+        if (date) {
+            query += ' AND journey_date = ?';
+            params.push(date);
+        }
+        
+        query += ' ORDER BY journey_date, departure_time';
         
         const [trains] = await pool.query(query, params);
         console.log(`✅ Found ${trains.length} trains`);
@@ -385,11 +396,11 @@ app.post('/book', authenticateToken, async (req, res) => {
         const totalFare = parseFloat(train.fare) * seats_booked;
         console.log(`Fare calculation: ${train.fare} × ${seats_booked} = ${totalFare}`);
         
-        // ✅ Insert booking with fare (FIX #3)
+        // ✅ Insert booking with fare and journey_date
         console.log('💾 Inserting booking record...');
         const [bookingResult] = await connection.query(
-            'INSERT INTO bookings (user_id, train_id, seats_booked, fare, status) VALUES (?, ?, ?, ?, ?)',
-            [user_id, train_id, seats_booked, totalFare, 'confirmed']
+            'INSERT INTO bookings (user_id, train_id, seats_booked, fare, journey_date, status) VALUES (?, ?, ?, ?, ?, ?)',
+            [user_id, train_id, seats_booked, totalFare, train.journey_date, 'confirmed']
         );
         console.log(`✅ Booking inserted. ID: ${bookingResult.insertId}`);
         
@@ -413,7 +424,10 @@ app.post('/book', authenticateToken, async (req, res) => {
             fare: totalFare,
             trainName: train.train_name,
             source: train.source,
-            destination: train.destination
+            destination: train.destination,
+            journeyDate: train.journey_date,
+            departureTime: train.departure_time,
+            arrivalTime: train.arrival_time
         });
         
     } catch (error) {
@@ -448,13 +462,13 @@ app.get('/bookings', authenticateToken, async (req, res) => {
 app.get('/bookings/user', authenticateToken, async (req, res) => {
     try {
         const [bookings] = await pool.query(`
-            SELECT b.id, b.seats_booked, b.fare, b.status, b.booking_date,
+            SELECT b.id, b.seats_booked, b.fare, b.journey_date, b.status, b.booking_date,
                 t.id as train_id, t.train_name, t.source, t.destination, 
                 t.departure_time, t.arrival_time
             FROM bookings b
             JOIN trains t ON b.train_id = t.id
             WHERE b.user_id = ?
-            ORDER BY b.booking_date DESC
+            ORDER BY b.journey_date DESC, b.booking_date DESC
         `, [req.user.id]);
         res.json(bookings);
     } catch (error) {
@@ -516,19 +530,66 @@ app.delete('/bookings/:id', authenticateToken, async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ERROR HANDLERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+    console.error('❌ UNCAUGHT EXCEPTION:', error);
+    console.error('Stack:', error.stack);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ UNHANDLED REJECTION at:', promise);
+    console.error('Reason:', reason);
+});
+
+// Test database connection first
+async function testConnection() {
+    try {
+        console.log('🔍 Testing database connection...');
+        await pool.query('SELECT 1');
+        console.log('✅ Database connection successful\n');
+        return true;
+    } catch (error) {
+        console.error('❌ Database connection failed!');
+        console.error('Error:', error.message);
+        console.error('\n💡 Troubleshooting:');
+        console.error('  1. Is MySQL running? Check with: mysql -u root -p');
+        console.error('  2. Check .env file credentials');
+        console.error('  3. Verify database exists: railway_booking');
+        console.error('  4. Check MySQL port (default: 3306)\n');
+        return false;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // START SERVER
 // ═══════════════════════════════════════════════════════════════════════════════
 
-initializeDatabase()
-    .then(() => {
+(async () => {
+    try {
+        // Test connection first
+        const connected = await testConnection();
+        if (!connected) {
+            console.error('❌ Cannot start server without database connection');
+            process.exit(1);
+        }
+        
+        // Initialize database
+        await initializeDatabase();
+        
+        // Start server
         app.listen(PORT, () => {
             console.log(`\n🚀 SERVER STARTED`);
             console.log(`📍 http://localhost:${PORT}`);
             console.log(`⏰ ${new Date().toLocaleString()}`);
             console.log(`✅ Ready to accept connections\n`);
         });
-    })
-    .catch((error) => {
+    } catch (error) {
         console.error('❌ Failed to start server:', error);
+        console.error('Stack:', error.stack);
         process.exit(1);
-    });
+    }
+})();
