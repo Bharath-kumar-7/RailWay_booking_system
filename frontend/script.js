@@ -17,6 +17,7 @@ const searchForm = document.getElementById('searchForm');
 const toggleLoginPassword = document.getElementById('toggleLoginPassword');
 const toggleSignupPassword = document.getElementById('toggleSignupPassword');
 const swapStations = document.getElementById('swapStations');
+const logoutBtn = document.getElementById('logoutBtn');
 
 // Utility function to get auth token
 function getAuthToken() {
@@ -46,6 +47,7 @@ function checkLogin() {
 
 // Initialize the app
 function init() {
+    initTheme();
     // Check authentication for home page
     if (window.location.pathname.includes('home.html')) {
         checkLogin();
@@ -55,6 +57,40 @@ function init() {
     // Setup event listeners for login page
     if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
         setupAuthPage();
+    }
+}
+
+// Theme handling
+function initTheme() {
+    const stored = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = stored || (prefersDark ? 'dark' : 'light');
+    applyTheme(theme);
+    const toggle = document.getElementById('themeToggle');
+    if (toggle) {
+        toggle.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+            const next = current === 'dark' ? 'light' : 'dark';
+            applyTheme(next);
+            localStorage.setItem('theme', next);
+        });
+        updateThemeToggleIcon();
+    }
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    updateThemeToggleIcon();
+}
+
+function updateThemeToggleIcon() {
+    const toggle = document.getElementById('themeToggle');
+    if (!toggle) return;
+    const icon = toggle.querySelector('i');
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (icon) {
+        icon.classList.toggle('fa-moon', !isDark);
+        icon.classList.toggle('fa-sun', isDark);
     }
 }
 
@@ -111,6 +147,10 @@ function setupHomePage() {
         if (userNameEl) {
             userNameEl.textContent = user.name;
         }
+    }
+
+    if(logoutBtn) {
+        logoutBtn.addEventListener('click', logout);
     }
 }
 
@@ -178,7 +218,6 @@ async function handleLogin(e) {
             showNotification(data.error || 'Login failed', 'error');
         }
     } catch (error) {
-        console.error('Login error:', error);
         showNotification('Connection error. Please check if backend is running.', 'error');
     } finally {
         submitBtn.innerHTML = originalText;
@@ -215,7 +254,6 @@ async function handleSignup(e) {
             showNotification(data.error || 'Registration failed', 'error');
         }
     } catch (error) {
-        console.error('Signup error:', error);
         showNotification('Connection error. Please check if backend is running.', 'error');
     } finally {
         submitBtn.innerHTML = originalText;
@@ -235,6 +273,11 @@ async function handleSearch(e) {
         return;
     }
     
+    if (!travelDate) {
+        showNotification('Please select a travel date', 'error');
+        return;
+    }
+    
     const submitBtn = e.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = ' Searching...';
@@ -242,7 +285,7 @@ async function handleSearch(e) {
     
     try {
         const response = await fetchWithAuth(
-            `${API_BASE_URL}/trains/search?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}`
+            `${API_BASE_URL}/trains/search?source=${encodeURIComponent(source)}&destination=${encodeURIComponent(destination)}&date=${encodeURIComponent(travelDate)}`
         );
         
         if (response.ok) {
@@ -253,7 +296,6 @@ async function handleSearch(e) {
             showNotification(data.error || 'Search failed', 'error');
         }
     } catch (error) {
-        console.error('Search error:', error);
         showNotification('Connection error. Please check if backend is running.', 'error');
     } finally {
         submitBtn.innerHTML = originalText;
@@ -276,7 +318,7 @@ function displaySearchResults(trains) {
             <div class="no-results">
                 <i class="fas fa-train"></i>
                 <h3>No trains found</h3>
-                <p>Try adjusting your source or destination stations</p>
+                <p>Try adjusting your search criteria or select a different date</p>
             </div>
         `;
         return;
@@ -290,13 +332,13 @@ function displaySearchResults(trains) {
         
         const departureTime = train.departure_time || '00:00';
         const arrivalTime = train.arrival_time || '00:00';
+        const journeyDate = train.journey_date ? new Date(train.journey_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
         
-        // ✅ FIX: Add data-train-id attribute to button
         trainCard.innerHTML = `
             <div class="train-header">
                 <div>
                     <h3 class="train-name">${train.train_name}</h3>
-                    <p class="train-number">ID: ${train.id}</p>
+                    <p class="train-number">ID: ${train.id} | ${journeyDate}</p>
                 </div>
                 <span class="fare">₹${parseFloat(train.fare).toFixed(2)}</span>
             </div>
@@ -333,15 +375,10 @@ function displaySearchResults(trains) {
         resultsSection.appendChild(trainCard);
     });
     
-    // ✅ FIX: ADD CLICK EVENT LISTENERS TO ALL BUY BUTTONS
-    console.log('Attaching click listeners to buy buttons...');
     document.querySelectorAll('.book-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const trainId = this.getAttribute('data-train-id');
-            const trainName = this.getAttribute('data-train-name');
-            console.log(`Buy clicked: Train=${trainName}, ID=${trainId}`);
-            console.log(`Redirecting to: book.html?train_id=${trainId}`);
             window.location.href = `book.html?train_id=${trainId}`;
         });
     });
@@ -368,6 +405,12 @@ function showNotification(message, type = 'info') {
         notification.classList.remove('show');
         setTimeout(() => notification.remove(), 300);
     }, 3000);
+}
+
+function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    window.location.href = 'index.html';
 }
 
 // Initialize when DOM is ready

@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RailwayEase | Book Train Tickets</title>
+  <meta name="description" content="Search and book train tickets with RailwayEase. Elegant, responsive, and fast.">
+  <meta name="theme-color" content="#1f2a44">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -24,10 +30,14 @@
           <i class="fas fa-ticket-alt"></i>
           <span>My Bookings</span>
         </a>
-        <a href="#" class="nav-link" onclick="logout()">
+        <a href="#" class="nav-link" id="logoutBtn">
           <i class="fas fa-sign-out-alt"></i>
           <span>Logout</span>
         </a>
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
+          <i class="fas fa-moon"></i>
+          <span>Theme</span>
+        </button>
       </nav>
     </div>
   </header>

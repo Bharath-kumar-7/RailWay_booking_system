@@ -41,12 +41,15 @@ async function loadUserBookings() {
         data.forEach(b => {
             const card = document.createElement("div");
             card.classList.add("booking-card");
+            
+            const journeyDate = b.journey_date ? new Date(b.journey_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+            const bookingDate = b.booking_date ? new Date(b.booking_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
 
             card.innerHTML = `
                 <div class="booking-header">
                     <div class="booking-info">
                         <h3>${b.train_name}</h3>
-                        <p class="booking-id">Booking ID: ${b.id}</p>
+                        <p class="booking-id">Booking ID: ${b.id} | Booked on: ${bookingDate}</p>
                     </div>
                     <span class="status status-confirmed">${b.status}</span>
                 </div>
@@ -66,16 +69,16 @@ async function loadUserBookings() {
 
                     <div class="booking-meta">
                         <div class="meta-item">
+                            <strong>Journey Date</strong>
+                            <span>${journeyDate}</span>
+                        </div>
+                        <div class="meta-item">
                             <strong>Seats</strong>
                             <span>${b.seats_booked}</span>
                         </div>
                         <div class="meta-item">
                             <strong>Total Fare</strong>
                             <span>₹${b.fare}</span>
-                        </div>
-                        <div class="meta-item">
-                            <strong>Date</strong>
-                            <span>${b.booking_date}</span>
                         </div>
                     </div>
                 </div>
